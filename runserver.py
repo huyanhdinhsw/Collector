@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import http.server
 import argparse
 from dotenv import load_dotenv
@@ -8,7 +7,10 @@ import os
 load_dotenv()
 
 DEFAULT_HOST = os.getenv("HOST", "127.0.0.1")
-DEFAULT_PORT = int(os.getenv("PORT", 8888))
+DEFAULT_PORT = int(os.getenv("PORT", 1267))
+PROG_NAME = "NIASRA Status Monitoring Service - CollectD Web"
+PROG_DESC = "This is a python script to interpret all RRD files that are created by collectd"
+PROG_EPILOG = ""
 
 
 class Handler(http.server.CGIHTTPRequestHandler):
@@ -16,7 +18,7 @@ class Handler(http.server.CGIHTTPRequestHandler):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Start a simple CGI-capable web server for serving Perl scripts."
+        description=PROG_DESC
     )
     parser.add_argument(
         "host",
@@ -35,7 +37,7 @@ def main():
 
     # Use HTTPServer to ensure necessary attributes are present.
     with http.server.HTTPServer((args.host, args.port), Handler) as httpd:
-        print("Collectd-web server running at http://%s:%s/" %
+        print("NIASRA Status Monitoring Service - CollectD Web at http://%s:%s/" %
               (args.host, args.port))
         try:
             httpd.serve_forever()
@@ -43,6 +45,5 @@ def main():
             print("\nShutting down server.")
             httpd.server_close()
 
-
 if __name__ == "__main__":
-    main()
+	main()
