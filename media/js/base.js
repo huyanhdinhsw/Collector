@@ -126,6 +126,9 @@ function get_timespan_start (timespan) {
         case "year":
             out_date.add(-1).years();
             break;
+        case "decade":
+            out_date.add(-10).years();
+            break;
     }
     return out_date;
 }
@@ -149,6 +152,17 @@ function build_url(original_url, new_params) {
     }
     Fb.log(url,"info");
     return url;
+}
+
+function is_dark_mode() {
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+function build_url_with_theme(url, params) {
+    if (is_dark_mode()) {
+        params.theme = 'dark';
+    }
+    return build_url(url, params);
 }
 
 function hide_toolbar_items () {
@@ -178,7 +192,7 @@ function create_plugin_menu(host, plugins) {
     tpl += '<div id="plugin-container" class="ui-widget-content ui-corner-bottom  "><ul>';
     for (var p = 0; p < plugins.length; p++) {
         tpl += '<li><a href="cgi-bin/collection.modified.cgi?action=show_plugin;host=' + host +
-            ';timespan=day;plugin=' + plugins[p] + '">' + plugins[p] + '</a></li>';
+            ';timespan=day;plugin=' + plugins[p] + '" onclick="window.scrollTo(0, 0)">' + plugins[p] + '</a></li>';
     }
     tpl += '</ul></div>';
     tpl += '</div>';
@@ -192,7 +206,7 @@ function get_graph_menu() {
 function update_all_graphs(start, end) {
     $('.gc-img').each(function () {
         var $this = $(this),
-            new_url = build_url($this.attr('src'), {
+            new_url = build_url_with_theme($this.attr('src'), {
             'start': print_date(start),
             'end': print_date(end)
         });
@@ -218,7 +232,7 @@ function create_graph_list(timespan, graphs) {
     $tpl += '<li class="ui-widget graph-image ' + timespan + '">';
     $tpl += '<ul class="sortable ui-sortable">';
     for (var g = 0; g < graphs.length; g++) {
-        final_url = build_url(graphs[g], {'start':print_date(start_date), 'end': print_date(end_date)});
+        final_url = build_url_with_theme(graphs[g], {'start': print_date(start_date), 'end': print_date(end_date)});
         $tpl += '<li class="gc">';
         $tpl += get_graph_menu();
         if ($('#graph-caching-checkbox').attr('checked')) {
@@ -274,7 +288,7 @@ var load_url = function () {
         $(".graph-imgs-container").html('');
         $.getJSON('cgi-bin/collection.modified.cgi?action=graphs_json;plugin=' + $selected_plugin + ';host=' + $selected_host, function (data) {
             $graph_json = data;
-            create_graph_list("hour", data.hour);
+            create_graph_list("day", data.day);
             $('#graph-container').html(get_graph_main_container($selected_host));
 
             lazy_check();
@@ -318,7 +332,8 @@ $(document).ready(function () {
 
     $.getJSON('cgi-bin/collection.modified.cgi?action=hostlist_json', function (data) {
         for (i = 0; i < data.length; i++) {
-            $("#hosts ul").append('<li><a href="cgi-bin/collection.modified.cgi?action=show_host;host=' + data[i] + '">' + data[i] + '</a></li>');
+            $("#hosts ul").append('<li><a href="cgi-bin/collection.modified.cgi?action=show_host;host=' + data[i] + '" onclick="window.scrollTo(0, document.body.scrollHeight)">'
+                + data[i] + '</a></li>');
         }
     });
 
@@ -433,8 +448,8 @@ $(document).ready(function () {
         $('#timespan-menu').data('start',$('.timespan-from').val());
         $('#timespan-menu').data('end', $('.timespan-to').val());
 
-        var start_date = Date.parse($('.timespan-from').val());
-        var end_date = Date.parse($('.timespan-to').val());
+        var start_date = Date.parseExact($('.timespan-from').val(), "yyyy-MM-ddTHH:mm");
+        var end_date   = Date.parseExact($('.timespan-to').val(),   "yyyy-MM-ddTHH:mm");
 
         if (!start_date || !end_date) {
             $('#error-msg').data('msg', 'One of the dates is invalid');
@@ -495,8 +510,8 @@ $(document).ready(function () {
             $('#graph-container .sortable li img').css('width', '200px');
 
             $('li.gc .gc-menu').css({
-                'height': '60px',
-                'width': '120px'
+                'height': '32px',
+                'width': '220px'
             });
         } else {
             // selected_view == 'list'
@@ -508,8 +523,8 @@ $(document).ready(function () {
             $('#graph-container .sortable li img').css('width', '');
 
             $('li.gc .gc-menu').css({
-                'height': '120px',
-                'width': '60px'
+                'height': '32px',
+                'width': '220px'
             });
         }
     });

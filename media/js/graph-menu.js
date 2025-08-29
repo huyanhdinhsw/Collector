@@ -17,12 +17,12 @@
 
 
 function print_date(in_date) {
-    var out_date = in_date.toString("HH:mm MMM d yyyy");
+    var out_date = in_date.toString("HH:mm MMM dd yyyy");
     return out_date;
 }
 
 function get_exact_date(in_date) {
-    var out_date = Date.parseExact(unescape(in_date), "HH:mm MMM d yyyy");
+    var out_date = Date.parseExact(unescape(in_date), "HH:mm MMM dd yyyy");
     return out_date;
 }
 
@@ -33,6 +33,17 @@ function get_date_distance(in_start, in_end) {
    return millis;
 }
 
+function is_dark_mode() {
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+function build_url_with_theme(url, params) {
+    if (is_dark_mode()) {
+        params.theme = 'dark';
+    }
+    return build_url(url, params);
+}
+
 /**
  * Function to make the graph move on the x axis
  * @param menu_element the button of the menu pressed
@@ -40,16 +51,14 @@ function get_date_distance(in_start, in_end) {
  * the graph to the right and negative values to the left
  * @return
  */
-function move_graph(menu_element, direction) {
-  var gc_img = $(menu_element).closest('li.gc').find('.gc-img');
-  var url = $(gc_img).attr('src');
-  var params = get_url_params(url);
+function build_move_graph_url(url, direction) {
+    var params = get_url_params(url);
 
     var end = server_now();
-    var start = server_now().add(-1).hours();
+    var start = server_now().add(-1).days();
 
-  if (params.start !== null) { start = get_exact_date(params.start); }
-    if (params.end !== null) { end = get_exact_date(params.end); }
+    if (params.start != null) { start = get_exact_date(params.start); }
+    if (params.end != null) { end = get_exact_date(params.end); }
 
     var date_distance = Math.round(get_date_distance(start, end) / 2);
 
@@ -61,23 +70,26 @@ function move_graph(menu_element, direction) {
         end.add(date_distance).milliseconds();
     }
 
-    $(gc_img).attr('src', build_url(url, {'start':print_date(start),
-                                          'end':print_date(end)
-                                         }));
+    return build_url_with_theme(url, {'start': print_date(start), 'end': print_date(end)});
 }
 
-function zoom_graph(menu_element, direction) {
-  var gc_img = $(menu_element).closest('li.gc').find('.gc-img');
-  var url = $(gc_img).attr('src');
-  var params = get_url_params(url);
+function move_graph(menu_element, direction) {
+    var gc_img = $(menu_element).closest('li.gc').find('.gc-img');
+
+    var url = $(gc_img).attr('src');
+    if (url != null) $(gc_img).attr('src', build_move_graph_url(url, direction));
+}
+
+function build_zoom_graph_url(url, direction) {
+    var params = get_url_params(url);
 
     var zoom_factor = 0.5;
 
     var end = server_now();
-    var start = server_now().add(-1).hours();
+    var start = server_now().add(-1).days();
 
-  if (params.start !== null) { start = get_exact_date(params.start); }
-    if (params.end !== null) { end = get_exact_date(params.end); }
+    if (params.start != null) { start = get_exact_date(params.start); }
+    if (params.end != null) { end = get_exact_date(params.end); }
 
     var date_distance = Math.round(get_date_distance(start, end) * zoom_factor);
 
@@ -87,9 +99,14 @@ function zoom_graph(menu_element, direction) {
         start.add(date_distance).milliseconds();
     }
 
-    $(gc_img).attr('src', build_url(url, {'start':print_date(start),
-                                          'end':print_date(end)
-                                         }));
+    return build_url_with_theme(url, {'start': print_date(start), 'end': print_date(end)});
+}
+
+function zoom_graph(menu_element, direction) {
+    var gc_img = $(menu_element).closest('li.gc').find('.gc-img');
+
+    var url = $(gc_img).attr('src');
+    if (url != null) $(gc_img).attr('src', build_zoom_graph_url(url, direction));
 }
 
 function move_selected_graphs (direction) {

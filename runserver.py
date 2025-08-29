@@ -1,25 +1,49 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+import http.server
+import argparse
+from dotenv import load_dotenv
+import os
 
-from http.server import CGIHTTPRequestHandler, HTTPServer
-from argparse import *
+load_dotenv()
 
-class Handler(CGIHTTPRequestHandler):
-	cgi_directories = ["/cgi-bin"]
-
-DEFAULT_IP="127.0.0.1"
-PORT = 1267
+DEFAULT_HOST = os.getenv("HOST", "127.0.0.1")
+DEFAULT_PORT = int(os.getenv("PORT", 1267))
 PROG_NAME = "NIASRA Status Monitoring Service - CollectD Web"
 PROG_DESC = "This is a python script to interpret all RRD files that are created by collectd"
 PROG_EPILOG = ""
 
+
+class Handler(http.server.CGIHTTPRequestHandler):
+    cgi_directories = ["/cgi-bin"]
+
 def main():
-	parser = ArgumentParser(prog=PROG_NAME, description=PROG_DESC, epilog=PROG_EPILOG)
-	parser.add_argument('-i', '--ipToDeploy', type=str, help="The IP to which the server should be deployed to, default is localhost 127.0.0.1", default=DEFAULT_IP)
-	parser.add_argument('-p', '--port', type=int, help="The PORT to which the server should be deployed to, default is 1267", default=PORT)
-	args = parser.parse_args()
-	httpd = HTTPServer((args.ipToDeploy, args.port), Handler)
-	print("Collectd-web server running at http://{}:{}/".format(args.ipToDeploy, args.port))
-	httpd.serve_forever()
+    parser = argparse.ArgumentParser(
+        description=PROG_DESC
+    )
+    parser.add_argument(
+        "host",
+        nargs="?",
+        default=DEFAULT_HOST,
+        help="Hostname or IP address to bind to (default: %(default)s)"
+    )
+    parser.add_argument(
+        "port",
+        nargs="?",
+        type=int,
+        default=DEFAULT_PORT,
+        help="Port number to listen on (default: %(default)s)"
+    )
+    args = parser.parse_args()
+
+    # Use HTTPServer to ensure necessary attributes are present.
+    with http.server.HTTPServer((args.host, args.port), Handler) as httpd:
+        print("NIASRA Status Monitoring Service - CollectD Web at http://%s:%s/" %
+              (args.host, args.port))
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print("\nShutting down server.")
+            httpd.server_close()
 
 if __name__ == "__main__":
 	main()
